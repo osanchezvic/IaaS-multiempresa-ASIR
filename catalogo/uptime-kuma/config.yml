@@ -1,1 +1,7 @@
-
+nombre: uptime-kuma
+descripcion: Monitorización de servicios, puertos, webs y certificados SSL.
+puerto_por_defecto: 3001
+icono: https://raw.githubusercontent.com/louislam/uptime-kuma/master/public/icon.png
+volumenes:
+  - uptime-kuma
+dependencias: []
