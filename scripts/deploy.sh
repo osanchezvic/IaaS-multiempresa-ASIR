@@ -1,23 +1,27 @@
 #!/bin/bash
 
-# 1. Recoger parámetros
+# 1. Parámetros
 EMPRESA=$1
 SERVICIO=$2
 
 if [ -z "$EMPRESA" ] || [ -z "$SERVICIO" ]; then
-    echo "Uso: $0 <empresa> <servicio>"
+    echo "Uso: ./scripts/deploy.sh <empresa> <servicio>"
     exit 1
 fi
 
-# 2. Definir rutas (usando rutas absolutas para mayor seguridad)
+# 2. Definir rutas basándonos en la ubicación del script
+# Esto detecta la carpeta 'scripts' y sube un nivel a la raíz del proyecto
+SCRIPT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+PROYECTO_ROOT=$(dirname "$SCRIPT_PATH")
+
+CATALOGO_DIR="$PROYECTO_ROOT/catalogo/$SERVICIO"
 BASE_DIR="/srv/$EMPRESA"
 SERVICIO_DIR="$BASE_DIR/$SERVICIO"
-# Asumimos que 'catalogo' está en el mismo nivel que el script
-SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
-CATALOGO_DIR="$SCRIPT_DIR/catalogo/$SERVICIO"
 
+# Verificación de que el servicio existe en el catálogo
 if [ ! -d "$CATALOGO_DIR" ]; then
-    echo "Error: El catálogo para el servicio '$SERVICIO' no existe en $CATALOGO_DIR"
+    echo "Error: El servicio '$SERVICIO' no existe en el catálogo."
+    echo "Servicios disponibles: $(ls "$PROYECTO_ROOT/catalogo" | xargs)"
     exit 1
 fi
 
@@ -31,8 +35,8 @@ DB_PASSWORD=$(openssl rand -hex 8)
 ADMIN_USER="admin"
 ADMIN_PASSWORD=$(openssl rand -hex 8)
 
-# 4 y 5. Procesar plantillas (Corregido el delimitador y la expansión)
-# Usamos '|' como delimitador de sed por si las variables contienen '/'
+# 4 y 5. Sustitución con sed (Corregido y seguro)
+# Usamos '|' para evitar conflictos con barras de rutas
 sed -e "s|{{EMPRESA}}|$EMPRESA|g" \
     -e "s|{{PUERTO}}|$PUERTO|g" \
     -e "s|{{RUTA_DATOS}}|$BASE_DIR|g" \
@@ -48,18 +52,18 @@ sed -e "s|{{DB_NAME}}|$DB_NAME|g" \
     -e "s|{{ADMIN_PASSWORD}}|$ADMIN_PASSWORD|g" \
     "$CATALOGO_DIR/env.tpl" > "$SERVICIO_DIR/.env"
 
-# 6. Crear red si no existe
+# 6. Red de Docker
 docker network inspect "${EMPRESA}_net" >/dev/null 2>&1 || \
     docker network create "${EMPRESA}_net"
 
-# 7. Levantar el servicio
+# 7. Despliegue
 cd "$SERVICIO_DIR" || exit
 docker compose up -d
 
-echo "------------------------------------------------"
-echo "Servicio $SERVICIO desplegado con éxito"
-echo "Empresa: $EMPRESA"
-echo "Puerto: $PUERTO"
-echo "Admin User: $ADMIN_USER"
-echo "Admin Pass: $ADMIN_PASSWORD"
-echo "------------------------------------------------"
+echo "================================================"
+echo "DESPLIEGE COMPLETADO"
+echo "URL: http://tu-ip:$PUERTO"
+echo "Empresa: $EMPRESA | Servicio: $SERVICIO"
+echo "Credenciales DB: $DB_USER / $DB_PASSWORD"
+echo "Credenciales Admin: $ADMIN_USER / $ADMIN_PASSWORD"
+echo "================================================"
