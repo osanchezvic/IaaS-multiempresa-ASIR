@@ -1,1 +1,8 @@
-
+nombre: nextcloud
+descripcion: Servicio de almacenamiento y colaboración para empresas.
+puerto_por_defecto: 8080
+icono: https://nextcloud.com/favicon.ico
+dependencias:
+  - mariadb
+volumenes:
+  - nextcloud
