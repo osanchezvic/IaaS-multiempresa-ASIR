@@ -1,1 +1,7 @@
-
+nombre: nginx
+descripcion: Servidor web Nginx para contenido estático o configuraciones personalizadas.
+puerto_por_defecto: 8080
+icono: https://www.nginx.com/wp-content/uploads/2018/08/nginx-logo-rgb-large.png
+volumenes:
+  - nginx
+dependencias: []
