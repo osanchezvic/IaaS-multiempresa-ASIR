@@ -1,1 +1,7 @@
-
+nombre: wireguard
+descripcion: Servidor VPN WireGuard para acceso seguro a la red de la empresa.
+puerto_por_defecto: 51820
+icono: https://www.wireguard.com/img/wireguard.svg
+volumenes:
+  - wireguard
+dependencias: []
