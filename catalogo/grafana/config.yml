@@ -1,1 +1,8 @@
-
+nombre: grafana
+descripcion: Plataforma de visualización y dashboards para Prometheus.
+puerto_por_defecto: 3000
+icono: https://grafana.com/static/img/menu/grafana2.svg
+volumenes:
+  - grafana
+dependencias:
+  - prometheus
