@@ -1,1 +1,8 @@
-
+nombre: prometheus
+descripcion: Sistema de monitorización y recolección de métricas.
+puerto_por_defecto: 9090
+icono: https://prometheus.io/assets/favicons/android-chrome-192x192.png
+volumenes:
+  - prometheus
+dependencias:
+  - node-exporter
