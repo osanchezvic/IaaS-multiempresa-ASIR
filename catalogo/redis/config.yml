@@ -1,1 +1,7 @@
-
+nombre: redis
+descripcion: Servidor de caché y almacenamiento en memoria para aplicaciones.
+puerto_por_defecto: 6379
+icono: https://redis.io/images/redis-white.png
+volumenes:
+  - redis
+dependencias: []
