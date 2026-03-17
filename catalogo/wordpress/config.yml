@@ -1,1 +1,8 @@
-
+nombre: wordpress
+descripcion: CMS WordPress con base de datos MariaDB.
+puerto_por_defecto: 8082
+icono: https://s.w.org/style/images/about/WordPress-logotype-wmark.png
+volumenes:
+  - wordpress
+dependencias:
+  - mariadb
