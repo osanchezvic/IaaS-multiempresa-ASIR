@@ -21,10 +21,27 @@ if [ ! -f "$COMPOSE_FILE" ]; then
     exit 1
 fi
 
+echo "Parando contenedores."
+sleep 0.3
+clear
+echo "Parando contenedores.."
+sleep 0.3
+clear
 echo "Parando contenedores..."
-docker compose -f "$COMPOSE_FILE" down
+sleep 0.3
+clear
 
+docker compose -f "$COMPOSE_FILE" down > /dev/null
+
+echo "Eliminando carpeta de datos."
+sleep 0.3
+clear
+echo "Eliminando carpeta de datos.."
+sleep 0.3
+clear
 echo "Eliminando carpeta de datos..."
+sleep 0.3
+clear
 rm -rf "$SERVICIO_DIR"
 
 # Comprobar si la red sigue existiendo
@@ -39,5 +56,5 @@ if docker network inspect "$RED" >/dev/null 2>&1; then
     fi
 fi
 
-echo "Servicio $SERVICIO de la empresa $EMPRESA eliminado correctamente."
+echo "El servicio $SERVICIO de la empresa $EMPRESA ha sido eliminado correctamente."
 
