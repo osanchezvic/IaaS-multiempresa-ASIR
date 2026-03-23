@@ -23,7 +23,7 @@ SERVICIO_DIR="$BASE_DIR/$SERVICIO"
 if [ ! -d "$CATALOGO_DIR" ]; then
     echo "Error: El servicio '$SERVICIO' no existe en el catálogo."
     echo "Servicios disponibles: $(ls "$PROYECTO_ROOT/catalogo" | xargs)"
-    exit 1
+    exit 2
 fi
 
 mkdir -p "$SERVICIO_DIR"
@@ -58,7 +58,7 @@ docker network inspect "${EMPRESA}_net" >/dev/null 2>&1 || \
     docker network create "${EMPRESA}_net"
 
 # 6. Despliegue
-cd "$SERVICIO_DIR" || exit
+cd "$SERVICIO_DIR" || exit 3
 docker compose up -d
 
 echo "================================================"
