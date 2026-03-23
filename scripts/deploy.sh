@@ -10,7 +10,7 @@ if [ -z "$EMPRESA" ] || [ -z "$SERVICIO" ]; then
     exit 1
 fi
 
-# 2. Definir rutas basándonos en la ubicación del script
+# 2. Definir rutas basandose en la ubicación del script
 # Esto detecta la carpeta 'scripts' y sube un nivel a la raíz del proyecto
 SCRIPT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 PROYECTO_ROOT=$(dirname "$SCRIPT_PATH")
@@ -19,7 +19,7 @@ CATALOGO_DIR="$PROYECTO_ROOT/catalogo/$SERVICIO"
 BASE_DIR="/srv/$EMPRESA"
 SERVICIO_DIR="$BASE_DIR/$SERVICIO"
 
-# Verificación de que el servicio existe en el catálogo
+# Si el servicio no existe en el catálogo exit
 if [ ! -d "$CATALOGO_DIR" ]; then
     echo "Error: El servicio '$SERVICIO' no existe en el catálogo."
     echo "Servicios disponibles: $(ls "$PROYECTO_ROOT/catalogo" | xargs)"
@@ -53,7 +53,7 @@ sed -e "s|{{DB_NAME}}|$DB_NAME|g" \
     -e "s|{{ADMIN_PASSWORD}}|$ADMIN_PASSWORD|g" \
     "$CATALOGO_DIR/env.tpl" > "$SERVICIO_DIR/.env"
 
-# 5. Red de Docker
+# 5. Red de Docker | Si no existe la crea
 docker network inspect "${EMPRESA}_net" >/dev/null 2>&1 || \
     docker network create "${EMPRESA}_net"
 
