@@ -1,0 +1,36 @@
+# ============================================
+# .gitignore para scripts/
+# No comitear datos sensibles, credenciales, logs
+# ============================================
+
+# Base de datos JSON
+databases/*.json
+!databases/.gitkeep
+
+# Credenciales
+databases/credentials/*
+!databases/credentials/.gitkeep
+
+# Logs
+logs/*
+!logs/.gitkeep
+
+# Archivos locales
+.env.local
+config.local.env
+
+# Backups de emergencia
+*.backup
+*.bak
+.snapshot/
+
+# Temporales
+*.tmp
+*.temp
+*~
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

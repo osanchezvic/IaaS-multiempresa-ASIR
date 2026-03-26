@@ -1,93 +1,279 @@
 #!/bin/bash
+set -euo pipefail
 
-# 1. Parámetros
-EMPRESA=$1
-SERVICIO=$2
+# =====================================================
+# DEPLOY DE SERVICIOS - VERSION 2.0 (REFACTORIZADA)
+# =====================================================
+# Desplega servicios en contenedores Docker con validaciones,
+# gestión de puertos robusta, credenciales persistidas y logging.
 
-if [ $# -lt 3 ]; then
-    echo "Uso: ./scripts/deploy.sh <empresa> <servicio>"
-    exit 1
-fi
-
-# Si alguno de los parámetros está vacio exit
-if [ -z "$EMPRESA" ] || [ -z "$SERVICIO" ]; then
-    echo "Uso: ./scripts/deploy.sh <empresa> <servicio>"
-    exit 1
-fi
-
-# 2. Definir rutas basandose en la ubicación del script
-# Esto detecta la carpeta 'scripts' y sube un nivel a la raíz del proyecto
+# Cargar configuración
 SCRIPT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
-PROYECTO_ROOT=$(dirname "$SCRIPT_PATH")
+source "$SCRIPT_PATH/config.env"
+source "$SCRIPT_PATH/funciones/logging.sh"
+source "$SCRIPT_PATH/funciones/db.sh"
+source "$SCRIPT_PATH/funciones/puertos.sh"
+source "$SCRIPT_PATH/funciones/utils.sh"
+source "$SCRIPT_PATH/funciones/validaciones.sh"
 
-CATALOGO_DIR="$PROYECTO_ROOT/catalogo/$SERVICIO"
-BASE_DIR="/srv/$EMPRESA"
-SERVICIO_DIR="$BASE_DIR/$SERVICIO"
+# Parámetros
+EMPRESA="${1:-}"
+SERVICIO="${2:-}"
 
-# Si el servicio no existe en el catálogo exit
-if [ ! -d "$CATALOGO_DIR" ]; then
-    echo "Error: El servicio '$SERVICIO' no existe en el catálogo."
-    echo "Servicios disponibles: $(ls "$PROYECTO_ROOT/catalogo" | xargs)"
-    exit 2
+# Iniciar log
+init_log "$EMPRESA" "$SERVICIO" "deploy"
+
+# =====================================================
+# VALIDACIONES DE ENTRADA
+# =====================================================
+
+if [ -z "$EMPRESA" ] || [ -z "$SERVICIO" ]; then
+    log_error "Parámetros insuficientes"
+    log_info "Uso: $(basename "$0") <empresa> <servicio>"
+    exit 1
 fi
 
-# Comprueba si el servicio ya se desplegó para esta empresa
-if [ -f "$SERVICIO_DIR/docker-compose.yml" ]; then
-    echo "El servicio '$SERVICIO' ya existe para la empresa '$EMPRESA'."
-    echo "Ruta: $SERVICIO_DIR/docker-compose.yml"
+log_info "Iniciando deploy de $EMPRESA/$SERVICIO"
+log_debug "Rutas: CATALOGO=$CATALOGO_DIR, BASE=/srv/$EMPRESA"
 
-    if cd "$SERVICIO_DIR" && docker compose ps --services --filter "status=running" | grep -q "^$SERVICIO$"; then
-        echo "Servicio ya está en ejecución. No se realiza nueva instalación."
+# Validaciones pre-deploy
+if ! validar_pre_deploy "$EMPRESA" "$SERVICIO"; then
+    log_failed "Validaciones pre-deploy fallidas"
+    exit 1
+fi
+
+# =====================================================
+# COMPROBACIÓN DE EXISTENCIA
+# =====================================================
+
+SERVICIO_DIR="/srv/$EMPRESA/$SERVICIO"
+COMPOSE_FILE="$SERVICIO_DIR/docker-compose.yml"
+
+if [ -f "$COMPOSE_FILE" ]; then
+    log_warn "Servicio ya existe para $EMPRESA/$SERVICIO"
+    
+    # Intentar obtener estado actual
+    if docker compose -f "$COMPOSE_FILE" ps 2>/dev/null | grep -q "healthy\|running"; then
+        log_success "Servicio ya está activo. No se realiza nueva instalación."
         exit 0
     else
-        echo "Servicio ya existe pero no está activo. Se intentará levantarlo."
-        cd "$SERVICIO_DIR" || exit 3
-        docker compose up -d
-        echo "Servicio '$SERVICIO' reiniciado."
-        exit 0
+        log_info "Servicio existe pero no está activo. Levantando..."
+        docker compose -f "$COMPOSE_FILE" up -d
+        
+        if wait_container_healthy "${EMPRESA}_${SERVICIO}" 30; then
+            log_success "Servicio reiniciado correctamente"
+            exit 0
+        else
+            log_error "Error levantando servicio existente"
+            exit 1
+        fi
     fi
 fi
 
-mkdir -p "$SERVICIO_DIR"
+# =====================================================
+# PREPARAR DIRECTORIO Y CREAR BACKUP
+# =====================================================
 
-# 3. Generar valores dinámicos
-PUERTO=$(shuf -i 8000-8999 -n 1)
+mkdir -p "$SERVICIO_DIR"
+log_debug "Directorio creado: $SERVICIO_DIR"
+
+# Crear backup previo (si existía y algo falló antes)
+if [ -d "$SERVICIO_DIR" ] && [ -f "$SERVICIO_DIR/docker-compose.yml" ]; then
+    if ! crear_backup "$EMPRESA" "$SERVICIO" "$SERVICIO_DIR"; then
+        log_warn "No se pudo crear backup previo"
+    fi
+fi
+
+# =====================================================
+# GENERAR CREDENCIALES Y VALORES
+# =====================================================
+
+log_info "Generando credenciales y valores..."
+
+# Puerto: asignación robusta
+PUERTO=$(asignar_puerto "$EMPRESA" "$SERVICIO" "dev")
+if [ -z "$PUERTO" ]; then
+    log_failed "No se pudo asignar puerto"
+    exit 1
+fi
+
+# Credenciales
 DB_NAME="${EMPRESA}_db"
 DB_USER="${EMPRESA}_user"
-DB_PASSWORD=$(openssl rand -hex 8)
+DB_PASSWORD=$(generar_password 16)
 ADMIN_USER="admin"
-ADMIN_PASSWORD=$(openssl rand -hex 8)
+ADMIN_PASSWORD=$(generar_password 16)
+JWT_SECRET=$(generar_token 32)
 
-# 4. Se utiliza el comando 'sed' para buscar y cambiar las marcas de los .tpl
-# Hay que utilizar '|' para evitar conflictos con barras de rutas !!!
+log_debug "Puerto: $PUERTO, DB: $DB_NAME, Usuario DB: $DB_USER"
+
+# =====================================================
+# GUARDAR CREDENCIALES DE FORMA SEGURA
+# =====================================================
+
+CREDENCIALES_JSON=$(jq -n \
+    --arg db_name "$DB_NAME" \
+    --arg db_user "$DB_USER" \
+    --arg db_pass "$DB_PASSWORD" \
+    --arg admin_user "$ADMIN_USER" \
+    --arg admin_pass "$ADMIN_PASSWORD" \
+    --arg jwt_secret "$JWT_SECRET" \
+    --arg puerto "$PUERTO" \
+    --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    '{
+        "db_name": $db_name,
+        "db_user": $db_user,
+        "db_password": $db_pass,
+        "admin_user": $admin_user,
+        "admin_password": $admin_pass,
+        "jwt_secret": $jwt_secret,
+        "puerto": $puerto,
+        "created_at": $timestamp
+    }')
+
+CRED_FILE=$(guardar_credenciales "$EMPRESA" "$SERVICIO" "$CREDENCIALES_JSON")
+log_success "Credenciales guardadas en $CRED_FILE"
+
+# =====================================================
+# REGISTRAR EN BASE DE DATOS
+# =====================================================
+
+if ! db_register_empresa "$EMPRESA"; then
+    # Si existe, está bien
+    log_debug "Empresa ya registrada"
+fi
+
+if ! db_register_servicio "$EMPRESA" "$SERVICIO" "$PUERTO" "$CRED_FILE"; then
+    log_error "Error registrando servicio en DB"
+    exit 1
+fi
+
+# =====================================================
+# GENERAR ARCHIVOS DESDE TEMPLATES
+# =====================================================
+
+log_info "Procesando templates..."
+
+CATALOGO_SERVICIO="$CATALOGO_DIR/$SERVICIO"
+
+# docker-compose.yml
+if [ ! -f "$CATALOGO_SERVICIO/docker-compose.tpl" ]; then
+    log_error "Template no encontrado: $CATALOGO_SERVICIO/docker-compose.tpl"
+    exit 1
+fi
+
 sed -e "s|{{EMPRESA}}|$EMPRESA|g" \
+    -e "s|{{SERVICIO}}|$SERVICIO|g" \
     -e "s|{{PUERTO}}|$PUERTO|g" \
-    -e "s|{{RUTA_DATOS}}|$BASE_DIR|g" \
+    -e "s|{{RUTA_DATOS}}|$/srv/$EMPRESA|g" \
     -e "s|{{DB_NAME}}|$DB_NAME|g" \
-    -e "s|{{DB_USER}}|$DB_USER|g" \
-    -e "s|{{DB_PASSWORD}}|$DB_PASSWORD|g" \
-    "$CATALOGO_DIR/docker-compose.tpl" > "$SERVICIO_DIR/docker-compose.yml"
-
-sed -e "s|{{DB_NAME}}|$DB_NAME|g" \
     -e "s|{{DB_USER}}|$DB_USER|g" \
     -e "s|{{DB_PASSWORD}}|$DB_PASSWORD|g" \
     -e "s|{{ADMIN_USER}}|$ADMIN_USER|g" \
     -e "s|{{ADMIN_PASSWORD}}|$ADMIN_PASSWORD|g" \
-    "$CATALOGO_DIR/env.tpl" > "$SERVICIO_DIR/.env"
+    -e "s|{{JWT_SECRET}}|$JWT_SECRET|g" \
+    "$CATALOGO_SERVICIO/docker-compose.tpl" > "$COMPOSE_FILE"
 
-# 5. Red de Docker | Si no existe la crea
-docker network inspect "${EMPRESA}_net" >/dev/null 2>&1 || \
-    docker network create "${EMPRESA}_net"
+log_debug "docker-compose.yml generado"
 
-# 6. Despliegue
-cd "$SERVICIO_DIR" || exit 3
-docker compose up -d
+# .env
+if [ -f "$CATALOGO_SERVICIO/env.tpl" ]; then
+    sed -e "s|{{DB_NAME}}|$DB_NAME|g" \
+        -e "s|{{DB_USER}}|$DB_USER|g" \
+        -e "s|{{DB_PASSWORD}}|$DB_PASSWORD|g" \
+        -e "s|{{ADMIN_USER}}|$ADMIN_USER|g" \
+        -e "s|{{ADMIN_PASSWORD}}|$ADMIN_PASSWORD|g" \
+        -e "s|{{PUERTO}}|$PUERTO|g" \
+        "$CATALOGO_SERVICIO/env.tpl" > "$SERVICIO_DIR/.env"
+    log_debug ".env generado"
+fi
 
-echo "================================================"
-echo "DESPLIEGE COMPLETADO"
-IP=$(hostname -I | awk '{print $1}')
-echo "URL: http://$IP:$PUERTO"
-echo "Empresa: $EMPRESA | Servicio: $SERVICIO"
-echo "Credenciales DB: $DB_USER / $DB_PASSWORD"
-echo "Credenciales Admin: $ADMIN_USER / $ADMIN_PASSWORD"
-echo "================================================"
+# =====================================================
+# VALIDAR ARCHIVOS GENERADOS
+# =====================================================
+
+if ! validar_compose_template "$EMPRESA" "$SERVICIO"; then
+    log_failed "docker-compose.yml inválido"
+    exit 1
+fi
+
+if ! validar_env_template "$EMPRESA" "$SERVICIO"; then
+    log_failed ".env inválido"
+    exit 1
+fi
+
+# =====================================================
+# CREAR RED DOCKER (si no existe)
+# =====================================================
+
+RED="${EMPRESA}_net"
+if ! docker network inspect "$RED" >/dev/null 2>&1; then
+    log_info "Creando red Docker: $RED"
+    docker network create "$RED" --driver bridge >/dev/null
+    log_debug "Red creada: $RED"
+else
+    log_debug "Red ya existe: $RED"
+fi
+
+# =====================================================
+# DESPLEGAR EN DOCKER
+# =====================================================
+
+log_info "Desplegando en Docker..."
+
+cd "$SERVICIO_DIR" || exit 1
+
+if ! docker compose up -d 2>&1 | tee -a "$LOG_FILE"; then
+    log_failed "Error en docker compose up"
+    exit 1
+fi
+
+log_debug "docker compose up -d completado"
+
+# =====================================================
+# ESPERAR A QUE CONTENEDORES ESTÉN HEALTHY
+# =====================================================
+
+sleep 2
+
+if ! wait_container_healthy "${EMPRESA}_${SERVICIO}" 60; then
+    log_warn "Contenedor no llegó a healthy state (continuando...)"
+fi
+
+# =====================================================
+# VALIDACIONES POST-DEPLOY
+# =====================================================
+
+if ! validar_post_deploy "$EMPRESA" "$SERVICIO"; then
+    log_warn "Algunas validaciones post-deploy fallaron"
+fi
+
+# =====================================================
+# RESUMEN FINAL
+# =====================================================
+
+LOCAL_IP=$(hostname -I | awk '{print $1}')
+DASHBOARD_URL="http://$LOCAL_IP:$PUERTO"
+
+log_info "=================================================="
+log_success "DEPLOY COMPLETADO"
+log_info "=================================================="
+log_info "Empresa:              $EMPRESA"
+log_info "Servicio:             $SERVICIO"
+log_info "Puerto:               $PUERTO"
+log_info "URL:                  $DASHBOARD_URL"
+log_info "Red Docker:           $RED"
+log_info "Directorio:           $SERVICIO_DIR"
+log_info "Credenciales:         $CRED_FILE"
+log_info "Logs:                 $LOG_FILE"
+log_info "=================================================="
+log_info ""
+log_info "Credenciales (usuario DB):     $DB_USER / $DB_PASSWORD"
+log_info "Credenciales (admin):          $ADMIN_USER / $ADMIN_PASSWORD"
+log_info ""
+log_info "Ver credenciales guardadas:    cat $CRED_FILE"
+log_info "Ver logs:                      tail -f $LOG_FILE"
+log_info "Ver estado:                    cd $SERVICIO_DIR && docker compose ps"
+log_info "=================================================="
+
+exit 0
