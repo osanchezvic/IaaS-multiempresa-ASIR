@@ -1,1 +1,48 @@
+version: '3.8'
 
+services:
+  nginx-proxy-manager:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: nginx_proxy_manager
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '81:81'
+    environment:
+      DB_MYSQL_HOST: "db"
+      DB_MYSQL_PORT: 3306
+      DB_MYSQL_USER: "npm"
+      DB_MYSQL_PASSWORD: "npm123"
+      DB_MYSQL_NAME: "npm"
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+    networks:
+      - infra_net
+    depends_on:
+      - db
+
+  db:
+    image: 'jc21/mariadb-aria:latest'
+    container_name: npm_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: 'npm123'
+      MYSQL_DATABASE: 'npm'
+      MYSQL_USER: 'npm'
+      MYSQL_PASSWORD: 'npm123'
+    volumes:
+      - ./mysql:/var/lib/mysql
+    networks:
+      - infra_net
+
+volumes:
+  mysql:
+  data:
+  letsencrypt:
+
+networks:
+  infra_net:
+    driver: bridge
+    name: infra_net

@@ -1,1 +1,29 @@
+version: '3.8'
 
+services:
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana_global
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - grafana_config:/etc/grafana
+    networks:
+      - infra_net
+    depends_on:
+      - prometheus
+
+volumes:
+  grafana_data:
+  grafana_config:
+
+networks:
+  infra_net:
+    driver: bridge
+    name: infra_net

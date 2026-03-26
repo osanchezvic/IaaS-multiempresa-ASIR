@@ -1,1 +1,29 @@
+version: '3.8'
 
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus_global
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - infra_net
+
+volumes:
+  prometheus_data:
+
+networks:
+  infra_net:
+    driver: bridge
+    name: infra_net
