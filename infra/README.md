@@ -5,21 +5,21 @@ Esta carpeta contiene los **servicios globales** de la plataforma. Son component
 
 ### Servicios de Red y Proxy
 - **Nginx Proxy Manager**: Gestión de dominios, SSL y proxy reverso
-  - URL: http://tu-servidor:81 (admin)
+  - URL: http://servidor:81 (admin)
   - Credenciales iniciales: admin@example.com / changeme
 
 ### Monitorización Global
 - **Prometheus**: Recolección de métricas
-  - URL: http://tu-servidor:9090
+  - URL: http://servidor:9090
 - **Grafana**: Dashboards y visualización
-  - URL: http://tu-servidor:3000
+  - URL: http://servidor:3000
   - Credenciales: admin / admin123
 - **Node Exporter**: Métricas del sistema host
   - Puerto: 9100 (interno)
 
 ### Herramientas de Administración
 - **Portainer**: Interfaz web para Docker
-  - URL: http://tu-servidor:9000
+  - URL: http://servidor:9000
 
 ### Automatización y Mantenimiento
 - **Watchtower**: Auto-actualización de contenedores
@@ -74,18 +74,18 @@ cd infra/backups && docker compose up -d
 ## Configuración Inicial
 
 ### Nginx Proxy Manager
-1. Accede a http://tu-servidor:81
+1. Accede a http://servidor:81
 2. Cambia la contraseña por defecto
 3. Configura dominios y SSL para los servicios de empresas
 
 ### Grafana
-1. Accede a http://tu-servidor:3000
+1. Accede a http://servidor:3000
 2. Usuario: admin, Contraseña: admin123
 3. Agrega Prometheus como fuente de datos: http://prometheus_global:9090
 4. Importa dashboards preconfigurados (Docker, Node Exporter)
 
 ### Portainer
-1. Accede a http://tu-servidor:9000
+1. Accede a http://servidor:9000
 2. Configura el endpoint local de Docker
 3. Gestiona contenedores, imágenes y volúmenes
 
