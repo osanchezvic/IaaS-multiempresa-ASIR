@@ -1,0 +1,52 @@
+<?php
+session_start();
+
+// Config DB
+$host = getenv('DB_HOST') ?: 'infra_users_db';
+$dbname = getenv('DB_NAME') ?: 'users_db';
+$user = getenv('DB_USER') ?: 'users_user';
+$pass = getenv('DB_PASSWORD') ?: 'users_pass';
+
+$conn = mysqli_connect($host, $user, $pass, $dbname);
+if (!$conn) {
+    die("Error DB: " . mysqli_connect_error());
+}
+
+// Login logic
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $empresa = mysqli_real_escape_string($conn, $_POST['empresa'] ?? '');
+    $usuario = mysqli_real_escape_string($conn, $_POST['usuario'] ?? '');
+    $password = $_POST['password'] ?? '';
+
+    $sql = "SELECT hash_password FROM usuarios WHERE empresa = '$empresa' AND usuario = '$usuario'";
+    $result = mysqli_query($conn, $sql);
+    
+    if ($result && $row = mysqli_fetch_assoc($result)) {
+        $hash = $row['hash_password'];
+        if (password_verify($password, $hash)) {
+            $_SESSION['empresa'] = $empresa;
+            $_SESSION['usuario'] = $usuario;
+            header("Location: dashboard.php");
+            exit;
+        }
+    }
+    $error = "Credenciales invalidas";
+}
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Panel Login</title>
+</head>
+<body>
+    <h1>Login Panel</h1>
+    <?php if (isset($error)) echo "<p style='color:red'>$error</p>"; ?>
+    <form method="post">
+        Empresa: <input type="text" name="empresa" required><br>
+        Usuario: <input type="text" name="usuario" required><br>
+        Password: <input type="password" name="password" required><br>
+        <button type="submit">Login</button>
+    </form>
+</body>
+</html>

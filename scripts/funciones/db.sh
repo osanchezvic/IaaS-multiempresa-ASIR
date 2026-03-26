@@ -60,4 +60,27 @@ listar_servicios() {
     fi
 }
 
-export -f registro_empresa registro_servicio obtener_puerto servicio_existe listar_servicios
+# Crear usuario admin en BD infra (para panel)
+crear_usuario_admin() {
+    local empresa="$1"
+    local admin_user="$2"
+    local admin_pass="$3"
+    
+    # Generar hash bcrypt con php (si disponible) o usar openssl para simple hash
+    # Para bcrypt, usar php si está instalado, sino fallback a md5
+    local hash_pass
+    if command -v php >/dev/null 2>&1; then
+        hash_pass=$(php -r "echo password_hash('$admin_pass', PASSWORD_BCRYPT);")
+    else
+        hash_pass=$(echo -n "$admin_pass" | openssl dgst -md5 | cut -d' ' -f2)
+    fi
+    
+    # Insertar en BD infra_users_db
+    mysql -h localhost -P 3307 -u users_user -pusers_pass users_db -e "
+        INSERT INTO usuarios (empresa, usuario, hash_password, rol) 
+        VALUES ('$empresa', '$admin_user', '$hash_pass', 'admin') 
+        ON DUPLICATE KEY UPDATE hash_password='$hash_pass';
+    " 2>/dev/null || log_warn "No se pudo insertar usuario admin en BD infra (BD no disponible?)"
+}
+
+export -f registro_empresa registro_servicio obtener_puerto servicio_existe listar_servicios crear_usuario_admin

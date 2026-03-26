@@ -143,6 +143,11 @@ if ! db_register_empresa "$EMPRESA"; then
     log_debug "Empresa ya registrada"
 fi
 
+# Crear usuario admin en BD infra (si no existe)
+if ! crear_usuario_admin "$EMPRESA" "$ADMIN_USER" "$ADMIN_PASSWORD"; then
+    log_debug "Usuario admin ya existe o BD no disponible"
+fi
+
 if ! db_register_servicio "$EMPRESA" "$SERVICIO" "$PUERTO" "$CRED_FILE"; then
     log_error "Error registrando servicio en DB"
     exit 1
