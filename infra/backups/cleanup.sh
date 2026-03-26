@@ -13,10 +13,10 @@ cleanup_log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" >> "$BACKUP_LOG"
 }
 
-echo "🧹 Limpiando backups más antiguos de $RETENTION_DAYS días..."
+echo "[INFO] Limpiando backups más antiguos de $RETENTION_DAYS días..."
 
 if [ ! -d "$BACKUP_BASE_DIR" ]; then
-    echo "ℹ️  No hay directorio de backups"
+    echo "[WARN] No hay directorio de backups"
     exit 0
 fi
 
@@ -41,7 +41,7 @@ done
 # Convertir bytes a MB
 FREED_MB=$((FREED_SIZE / 1024 / 1024))
 
-echo "✓ Limpieza completada"
+echo "[OK] Limpieza completada"
 echo "  Archivos eliminados: $DELETED"
 echo "  Espacio liberado: ${FREED_MB}MB"
 

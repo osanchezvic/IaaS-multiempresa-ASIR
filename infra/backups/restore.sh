@@ -27,28 +27,28 @@ if [ -n "$FECHA" ]; then
     # Backup específico por fecha
     BACKUP_FILE="$BACKUP_BASE_DIR/$EMPRESA/$SERVICIO/backup_${FECHA}.tar.gz"
     if [ ! -f "$BACKUP_FILE" ]; then
-        echo "❌ Backup no encontrado: $BACKUP_FILE"
+        echo "[ERROR] Backup no encontrado: $BACKUP_FILE"
         exit 1
     fi
 else
     # Último backup (más reciente)
     BACKUP_FILE=$(ls -t "$BACKUP_BASE_DIR/$EMPRESA/$SERVICIO"/backup_*.tar.gz 2>/dev/null | head -1)
     if [ -z "$BACKUP_FILE" ]; then
-        echo "❌ Sin backups disponibles para $EMPRESA/$SERVICIO"
+        echo "[ERROR] Sin backups disponibles para $EMPRESA/$SERVICIO"
         exit 1
     fi
 fi
 
-echo "🔄 Restaurando desde: $(basename $BACKUP_FILE)"
+echo "[INFO] Restaurando desde: $(basename $BACKUP_FILE)"
 
 # Verificar contenedor
 if ! docker ps -a | grep -q "$CONTAINER"; then
-    echo "❌ Contenedor no encontrado: $CONTAINER"
+    echo "[ERROR] Contenedor no encontrado: $CONTAINER"
     exit 1
 fi
 
 # Detener contenedor
-echo "⏹️  Deteniendo contenedor..."
+echo "[INFO] Deteniendo contenedor..."
 docker stop "$CONTAINER" 2>/dev/null || true
 sleep 2
 
@@ -56,7 +56,7 @@ sleep 2
 TEMP_DIR="/tmp/restore_${EMPRESA}_${SERVICIO}"
 mkdir -p "$TEMP_DIR"
 
-echo "📂 Extrayendo datos..."
+echo "[INFO] Extrayendo datos..."
 tar -xzf "$BACKUP_FILE" -C "$TEMP_DIR" || true
 
 # Restaurar a volúmenes (requiere permisos)
@@ -73,13 +73,13 @@ fi
 rm -rf "$TEMP_DIR"
 
 # Reiniciar contenedor
-echo "🚀 Reiniciando contenedor..."
+echo "[INFO] Reiniciando contenedor..."
 docker start "$CONTAINER" 2>/dev/null || true
 sleep 5
 
 # Verificar estado
 if docker ps | grep -q "$CONTAINER"; then
-    echo "✓ Restauración completada y contenedor activo"
+    echo "[OK] Restauracion completada y contenedor activo"
 else
-    echo "⚠️  Restauración completada pero contenedor no está activo"
+    echo "[WARN] Restauracion completada pero contenedor no esta activo"
 fi

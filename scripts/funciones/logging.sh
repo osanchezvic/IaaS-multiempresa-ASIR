@@ -5,15 +5,15 @@
 # =========================================
 
 echo_info() {
-    echo -e "${COLOR_GREEN}✓${COLOR_RESET} $*"
+    echo -e "${COLOR_GREEN}[OK]${COLOR_RESET} $*"
 }
 
 echo_error() {
-    echo -e "${COLOR_RED}✗ ERROR:${COLOR_RESET} $*" >&2
+    echo -e "${COLOR_RED}[ERROR]${COLOR_RESET} $*" >&2
 }
 
 echo_warn() {
-    echo -e "${COLOR_YELLOW}⚠${COLOR_RESET} $*"
+    echo -e "${COLOR_YELLOW}[WARN]${COLOR_RESET} $*"
 }
 
 echo_debug() {

@@ -41,7 +41,7 @@ if [ -f "$BASE_DIR/docker-compose.yml" ]; then
             ;;
     esac
 
-    echo "✓ Infraestructura global $ACTION completada"
+    echo "[OK] Infraestructura global $ACTION completada"
 else
     for service in "${SERVICES[@]}"; do
         service_path="$BASE_DIR/$service"
@@ -62,15 +62,15 @@ else
                     docker compose restart
                     ;;
                 *)
-                    echo "Acción no válida. Use: start|stop|restart"
+                    echo "Accion no valida. Use: start|stop|restart"
                     exit 1
                     ;;
             esac
 
-            echo "✓ $service completado"
+            echo "[OK] $service completado"
             echo
         else
-            echo "⚠ Saltando $service (no existe docker-compose.yml)"
+            echo "[WARN] Saltando $service (no existe docker-compose.yml)"
         fi
     done
 fi

@@ -30,7 +30,7 @@ mkdir -p "$BACKUP_BASE_DIR/$EMPRESA/$SERVICIO"
 
 # Verificar que contenedor existe
 if ! docker ps -a | grep -q "$CONTAINER"; then
-    echo "❌ Contenedor no encontrado: $CONTAINER"
+    echo "[ERROR] Contenedor no encontrado: $CONTAINER"
     backup_log "FAIL: Contenedor $CONTAINER no existe"
     exit 1
 fi
@@ -39,13 +39,13 @@ fi
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="$BACKUP_BASE_DIR/$EMPRESA/$SERVICIO/backup_${TIMESTAMP}.tar.gz"
 
-echo "📦 Iniciando backup: $EMPRESA/$SERVICIO"
+echo "[INFO] Iniciando backup: $EMPRESA/$SERVICIO"
 
 # Obtener volumes del contenedor
 VOLUMES=$(docker inspect "$CONTAINER" | grep -o '"/var/lib/docker/volumes/[^"]*/_data"' 2>/dev/null | sed 's|"/var/lib/docker/volumes/||g' | sed 's|/_data"||g')
 
 if [ -z "$VOLUMES" ]; then
-    echo "⚠️  Sin volúmenes encontrados para $CONTAINER"
+    echo "[WARN] Sin volúmenes encontrados para $CONTAINER"
     BACKUP_FILE="${BACKUP_FILE%.tar.gz}_empty.tar.gz"
 fi
 
@@ -66,5 +66,5 @@ fi
 
 # Registrar backup
 SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
-echo "✓ Backup creado: $BACKUP_FILE ($SIZE)"
+echo "[OK] Backup creado: $BACKUP_FILE ($SIZE)"
 backup_log "OK: $EMPRESA/$SERVICIO - $BACKUP_FILE - $SIZE"

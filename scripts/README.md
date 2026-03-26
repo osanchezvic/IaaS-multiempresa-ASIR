@@ -7,44 +7,44 @@ Esta carpeta contiene el **motor de despliegue refactorizado** de la plataforma 
 ```
 scripts/
 ├── config.env              # Configuración centralizada
-├── deploy.sh              # Script principal de despliegue ⭐ REFACTORIZADO
+├── deploy.sh              # Script principal de despliegue (REFACTORIZADO)
 ├── destroy.sh             # Destrucción segura de servicios
 ├── list.sh                # Listar empresas y servicios
 ├── .gitignore             # Ignora datos sensibles
-├── funciones/             # ⭐ MÓDULOS REUTILIZABLES
+├── funciones/             # MODULOS REUTILIZABLES
 │   ├── logging.sh         # Sistema de logging estructurado
 │   ├── db.sh              # Gestión de bases de datos JSON
 │   ├── puertos.sh         # Asignación robusta de puertos (sin colisiones)
 │   ├── utils.sh           # Utilidades genéricas
 │   └── validaciones.sh    # Validaciones de servicios y dependencias
-├── databases/             # ⭐ ALMACENAMIENTO SEGURO
+├── databases/             # ALMACENAMIENTO SEGURO
 │   ├── empresas.json      # Registro de empresas
 │   ├── servicios.json     # Registro de servicios
 │   ├── puertos.json       # Registro de puertos asignados
 │   └── credentials/       # Credenciales de servicios (permisos 600)
-├── logs/                  # ⭐ AUDITRÍA Y DEBUGGING
+├── logs/                  # AUDITRIA Y DEBUGGING
 │   └── *_deploy_*.log     # Logs de cada operación
 └── README.md              # (este archivo)
 ```
 
 ## Cambios P0 Implementados
 
-### ✅ 1. Sistema de Logging Estructurado
+### [OK] 1. Sistema de Logging Estructurado
 - **Archivo**: `funciones/logging.sh`
 - Logs con timestamp, nivel (DEBUG/INFO/WARN/ERROR) y contexto
 - Múltiples salidas: stdout (coloreado) + archivo
 - Trazabilidad completa de operaciones
 
-### ✅ 2. Bases de Datos JSON (no colisiones)
+### [OK] 2. Bases de Datos JSON (no colisiones)
 - **Archivo**: `funciones/db.sh`
 - Registro de empresas, servicios y puertos
 - Validación de duplicados
 - Export/Import de estado completo
 - Bloqueos básicos (sin race conditions)
 
-### ✅ 3. Asignación Robusta de Puertos
+### [OK] 3. Asignación Robusta de Puertos
 - **Archivo**: `funciones/puertos.sh`
-- ✨ **SIN colisiones**: Busca puerto libre en rango + registra en DB
+- **SIN colisiones**: Busca puerto libre en rango + registra en DB
 - Valida puerto = no en uso en sistema + no en DB
 - Range por env: dev (8000-8999), prod (9000-9999)
 - Recuperación de puertos al destruir
