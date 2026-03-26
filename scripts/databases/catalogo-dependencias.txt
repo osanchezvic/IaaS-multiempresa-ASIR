@@ -1,0 +1,5 @@
+grafana:  - prometheus
+nextcloud:  - mariadb,  - nextcloud
+phpmyadmin:  - mariadb
+prometheus:  - node-exporter
+wordpress:  - mariadb
