@@ -22,36 +22,58 @@ echo "Acción: $ACTION"
 echo "Directorio base: $BASE_DIR"
 echo
 
-for service in "${SERVICES[@]}"; do
-    service_path="$BASE_DIR/$service"
+if [ -f "$BASE_DIR/docker-compose.yml" ]; then
+    echo "Usando docker-compose global: $BASE_DIR/docker-compose.yml"
 
-    if [ -d "$service_path" ] && [ -f "$service_path/docker-compose.yml" ]; then
-        echo "Procesando: $service"
+    case $ACTION in
+        start)
+            docker compose -f "$BASE_DIR/docker-compose.yml" up -d
+            ;;
+        stop)
+            docker compose -f "$BASE_DIR/docker-compose.yml" down
+            ;;
+        restart)
+            docker compose -f "$BASE_DIR/docker-compose.yml" restart
+            ;;
+        *)
+            echo "Acción no válida. Use: start|stop|restart"
+            exit 1
+            ;;
+    esac
 
-        cd "$service_path" || continue
+    echo "✓ Infraestructura global $ACTION completada"
+else
+    for service in "${SERVICES[@]}"; do
+        service_path="$BASE_DIR/$service"
 
-        case $ACTION in
-            start)
-                docker compose up -d
-                ;;
-            stop)
-                docker compose down
-                ;;
-            restart)
-                docker compose restart
-                ;;
-            *)
-                echo "Acción no válida. Use: start|stop|restart"
-                exit 1
-                ;;
-        esac
+        if [ -d "$service_path" ] && [ -f "$service_path/docker-compose.yml" ]; then
+            echo "Procesando: $service"
 
-        echo "✓ $service completado"
-        echo
-    else
-        echo "⚠ Saltando $service (no existe docker-compose.yml)"
-    fi
-done
+            cd "$service_path" || continue
+
+            case $ACTION in
+                start)
+                    docker compose up -d
+                    ;;
+                stop)
+                    docker compose down
+                    ;;
+                restart)
+                    docker compose restart
+                    ;;
+                *)
+                    echo "Acción no válida. Use: start|stop|restart"
+                    exit 1
+                    ;;
+            esac
+
+            echo "✓ $service completado"
+            echo
+        else
+            echo "⚠ Saltando $service (no existe docker-compose.yml)"
+        fi
+    done
+fi
 
 echo "=== INFRAESTRUCTURA $ACTION COMPLETADA ==="
 echo

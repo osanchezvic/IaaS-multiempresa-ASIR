@@ -5,6 +5,12 @@ services:
     image: crazymax/fail2ban:latest
     container_name: fail2ban_global
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "pgrep -f fail2ban-server >/dev/null"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     network_mode: host
     cap_add:
       - NET_ADMIN

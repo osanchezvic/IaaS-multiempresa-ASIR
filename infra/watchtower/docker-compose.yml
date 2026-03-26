@@ -5,6 +5,12 @@ services:
     image: containrrr/watchtower:latest
     container_name: watchtower_global
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "ps aux | grep -q watchtower || exit 1"]
+      interval: 1m
+      timeout: 15s
+      retries: 3
+      start_period: 60s
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:

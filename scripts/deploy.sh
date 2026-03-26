@@ -31,6 +31,23 @@ if [ ! -d "$CATALOGO_DIR" ]; then
     exit 2
 fi
 
+# Comprueba si el servicio ya se desplegó para esta empresa
+if [ -f "$SERVICIO_DIR/docker-compose.yml" ]; then
+    echo "El servicio '$SERVICIO' ya existe para la empresa '$EMPRESA'."
+    echo "Ruta: $SERVICIO_DIR/docker-compose.yml"
+
+    if cd "$SERVICIO_DIR" && docker compose ps --services --filter "status=running" | grep -q "^$SERVICIO$"; then
+        echo "Servicio ya está en ejecución. No se realiza nueva instalación."
+        exit 0
+    else
+        echo "Servicio ya existe pero no está activo. Se intentará levantarlo."
+        cd "$SERVICIO_DIR" || exit 3
+        docker compose up -d
+        echo "Servicio '$SERVICIO' reiniciado."
+        exit 0
+    fi
+fi
+
 mkdir -p "$SERVICIO_DIR"
 
 # 3. Generar valores dinámicos
