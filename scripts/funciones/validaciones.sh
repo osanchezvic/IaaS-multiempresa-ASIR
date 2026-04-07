@@ -77,7 +77,58 @@ validar_dependencias_auto() {
                     return 1
                 fi
             else
-                echo_error "Error: no pude validar la dependencia $dep"
+                echo_error "Error: no se pudo validar la dependencia $dep"
+                return 1
+            fi
+        fi
+    done <<< "$deps"
+    
+    return 0
+}
+
+# Validar y resolver dependencias automáticamente
+validar_dependencias_auto() {
+    local empresa="$1"
+    local servicio="$2"
+    
+    echo_info "Verificando dependencias de $servicio..."
+    
+    local deps=$(obtener_dependencias "$servicio")
+    
+    if [ -z "$deps" ]; then
+        echo_debug "Sin dependencias"
+        return 0
+    fi
+    
+    while read -r dep; do
+        if [ -z "$dep" ]; then
+            continue
+        fi
+        
+        echo_debug "Validando dependencia: $dep"
+        
+        # Verificar si la dependencia ya existe para esta empresa
+        if servicio_existe "$empresa" "$dep"; then
+            echo_info "Dependencia OK: $empresa/$dep ya existe"
+        else
+            echo_warn "Dependencia FALTA: $empresa/$dep"
+            
+            # Mostrar info de dependencia
+            if validar_servicio "$dep"; then
+                echo_info "Instalando dependencia: $dep..."
+                
+                # Desplegar dependencia automáticamente
+                cd "$SCRIPT_PATH" || return 1
+                
+                if ./deploy.sh "$empresa" "$dep" >/dev/null 2>&1; then
+                    echo_info "Dependencia instalada: $empresa/$dep"
+                else
+                    echo_error "Error instalando dependencia: $empresa/$dep"
+                    echo_info "Intenta manualmente: ./deploy.sh $empresa $dep"
+                    return 1
+                fi
+            else
+                echo_error "Error: no se pudo validar la dependencia $dep"
                 return 1
             fi
         fi

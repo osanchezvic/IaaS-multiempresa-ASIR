@@ -170,7 +170,7 @@ fi
 sed -e "s|{{EMPRESA}}|$EMPRESA|g" \
     -e "s|{{SERVICIO}}|$SERVICIO|g" \
     -e "s|{{PUERTO}}|$PUERTO|g" \
-    -e "s|{{RUTA_DATOS}}|$/srv/$EMPRESA|g" \
+    -e "s|{{RUTA_DATOS}}|/srv/$EMPRESA|g" \
     -e "s|{{DB_NAME}}|$DB_NAME|g" \
     -e "s|{{DB_USER}}|$DB_USER|g" \
     -e "s|{{DB_PASSWORD}}|$DB_PASSWORD|g" \

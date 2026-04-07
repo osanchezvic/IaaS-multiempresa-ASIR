@@ -17,7 +17,7 @@ EMPRESA="${1:-}"
 SERVICIO="${2:-}"
 
 if [ -z "$EMPRESA" ] || [ -z "$SERVICIO" ]; then
-    echo_error "Parametros insuficientes"
+    echo_error "Parámetros insuficientes"
     echo_info "Uso: $(basename "$0") <empresa> <servicio>"
     exit 1
 fi

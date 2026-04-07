@@ -20,7 +20,7 @@ SERVICIO="${2:-}"
 init_log "$EMPRESA" "$SERVICIO" "destroy"
 
 if [ -z "$EMPRESA" ] || [ -z "$SERVICIO" ]; then
-    echo_error "Parametros insuficientes"
+    echo_error "Parámetros insuficientes"
     echo_info "Uso: $(basename "$0") <empresa> <servicio>"
     exit 1
 fi
@@ -35,8 +35,8 @@ echo_info "Destruyendo servicio: $EMPRESA/$SERVICIO"
 echo ""
 
 # Confirmar acción
-if ! confirmar "Confirma eliminar $EMPRESA/$SERVICIO? Esto hará backup antes"; then
-    echo_warn "Operacion cancelada"
+if ! confirmar "¿Confirma eliminar $EMPRESA/$SERVICIO? Esto hará backup antes"; then
+    echo_warn "Operación cancelada"
     exit 0
 fi
 

@@ -17,7 +17,7 @@ FORMATO="${2:-table}"
 
 # Validar directorio de BD
 if [ ! -f "$DB_DIR/servicios.txt" ]; then
-    echo_info "No hay servicios desplegados aun"
+    echo_info "No hay servicios desplegados aún"
     exit 0
 fi
 

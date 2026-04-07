@@ -64,19 +64,45 @@ generar_password() {
 guardar_credenciales() {
     local empresa="$1"
     local servicio="$2"
-    local usuario="$3"
-    local password="$4"
+    local credenciales_json="$3"
     
     mkdir -p "$CREDENTIALS_DIR"
     local cred_file="$CREDENTIALS_DIR/${empresa}.${servicio}"
     
-    cat > "$cred_file" <<EOF
-usuario=$usuario
-password=$password
-EOF
+    echo "$credenciales_json" > "$cred_file"
     chmod 600 "$cred_file"
     
     echo "$cred_file"
+}
+
+# Leer credenciales como JSON
+leer_credenciales_json() {
+    local empresa="$1"
+    local servicio="$2"
+    
+    local cred_file="$CREDENTIALS_DIR/${empresa}.${servicio}"
+    
+    if [ ! -f "$cred_file" ]; then
+        echo_error "Credenciales no encontradas: $cred_file"
+        return 1
+    fi
+    
+    cat "$cred_file"
+}
+
+# Leer credenciales como JSON
+leer_credenciales_json() {
+    local empresa="$1"
+    local servicio="$2"
+    
+    local cred_file="$CREDENTIALS_DIR/${empresa}.${servicio}"
+    
+    if [ ! -f "$cred_file" ]; then
+        echo_error "Credenciales no encontradas: $cred_file"
+        return 1
+    fi
+    
+    cat "$cred_file"
 }
 
 # Leer credenciales (txt simple con grep)
@@ -95,4 +121,4 @@ leer_credenciales() {
     grep "^${clave}=" "$cred_file" | cut -d'=' -f2
 }
 
-export -f validar_nombre confirmar generar_password guardar_credenciales leer_credenciales
+export -f validar_nombre confirmar generar_password guardar_credenciales leer_credenciales leer_credenciales_json leer_credenciales_json
