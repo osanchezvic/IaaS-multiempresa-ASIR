@@ -178,7 +178,7 @@ $stats = mysqli_fetch_assoc(mysqli_query($conn, $stats_sql));
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Sistema IaaS</title>
+    <title>Admin Dashboard - Sistema SaaS</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -334,7 +334,7 @@ $stats = mysqli_fetch_assoc(mysqli_query($conn, $stats_sql));
 </head>
 <body>
     <div class="header">
-        <h1>📊 Dashboard Admin - IaaS MultiEmpresa</h1>
+        <h1>📊 Dashboard Admin - SaaS MultiEmpresa</h1>
         <div class="header-actions">
             <span>Conectado como: admin</span>
             <form method="GET" style="margin: 0;">

@@ -1,6 +1,6 @@
-# Plataforma IaaS Multiempresa
-
-Plataforma de gestión IaaS automatizada diseñada para orquestar servicios basados en Docker en entornos multiempresa. El sistema centraliza el despliegue, la configuración y el mantenimiento de servicios aislados para múltiples inquilinos (tenants).
+# Plataforma SaaS Multiempresa
+ 
+Plataforma de gestión SaaS automatizada diseñada para orquestar servicios basados en Docker en entornos multiempresa. El sistema centraliza el despliegue, la configuración y el mantenimiento de servicios aislados para múltiples inquilinos (tenants).
 
 ## Arquitectura
 

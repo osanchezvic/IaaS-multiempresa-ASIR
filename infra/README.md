@@ -1,6 +1,6 @@
 # Infraestructura Global
 
-Este directorio contiene la configuración y los scripts para desplegar y gestionar los servicios de infraestructura comunes que dan soporte a la plataforma IaaS Multiempresa.
+Este directorio contiene la configuración y los scripts para desplegar y gestionar los servicios de infraestructura comunes que dan soporte a la plataforma SaaS Multiempresa.
 
 ## Servicios Incluidos
 

@@ -198,7 +198,7 @@ Un archivo que dice cómo poner en marcha varioconenedores juntos. Por ejemplo, 
 ## 9. ESTRUCTURA DE CARPETAS (SIMPLIFICADA)
 
 ```
-IaaS-multiempresa-ASIR/
+SaaS-multiempresa-ASIR/
 ├── scripts/                    ← Los comandos que ejecutas
 │   ├── deploy.sh              ← Instalar servicios
 │   ├── list.sh                ← Ver qué hay instalado
