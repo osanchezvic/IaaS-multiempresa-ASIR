@@ -4,6 +4,9 @@
 # DESTROY.SH - Eliminar servicios
 # =========================================
 
+exec 200>/tmp/iaas_destroy.lock
+flock -n 200 || { echo "Otro proceso de destroy está en ejecución"; exit 1; }
+
 set -euo pipefail
 
 SCRIPT_PATH=$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
@@ -26,7 +29,7 @@ if [ -z "$EMPRESA" ] || [ -z "$SERVICIO" ]; then
 fi
 
 # Variables
-SERVICIO_DIR="/srv/$EMPRESA/$SERVICIO"
+SERVICIO_DIR="$DATA_DIR/$EMPRESA/$SERVICIO"
 COMPOSE_FILE="$SERVICIO_DIR/docker-compose.yml"
 RED="${EMPRESA}_net"
 CONTAINER="${EMPRESA}_${SERVICIO}_1"

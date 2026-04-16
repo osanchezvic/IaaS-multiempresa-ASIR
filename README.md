@@ -1,146 +1,65 @@
-# IaaS Multiempresa ASIR - TFC
+# Plataforma IaaS Multiempresa
 
-**Proyecto de Fin de Ciclo (TFC)** para módulo de ASIR.
+Plataforma de gestión IaaS automatizada diseñada para orquestar servicios basados en Docker en entornos multiempresa. El sistema centraliza el despliegue, la configuración y el mantenimiento de servicios aislados para múltiples inquilinos (tenants).
 
-Sistema de despliegue automatizado de servicios Docker para múltiples empresas con gestión robusta de puertos, credenciales seguras, backups automáticos y validación de dependencias.
+## Arquitectura
 
----
+El sistema emplea un enfoque basado en catálogo para desplegar servicios aislados. Automatiza los siguientes procesos críticos:
+- Resolución de dependencias entre servicios.
+- Asignación dinámica de puertos y prevención de colisiones.
+- Gestión de secretos y credenciales.
+- Copias de seguridad automáticas antes de operaciones destructivas.
+- Aislamiento de red (redes Docker dedicadas por empresa).
 
-## Inicio rápido
+## Estructura del Proyecto
+
+```text
+/
+├── catalogo/        # Definiciones de servicios (templates docker-compose)
+├── infra/           # Infraestructura global (proxy, monitorización, gestión)
+├── scripts/         # Lógica central de orquestación
+│   ├── funciones/   # Módulos bash reutilizables
+│   └── databases/   # Gestión de estado (JSON/Texto plano)
+└── docs/            # Documentación técnica
+```
+
+## Características Principales
+
+- **Resolución Automática de Dependencias:** Gestión de despliegue en cascada. Si un servicio (ej. `wordpress`) requiere otro (ej. `mariadb`), el orquestador valida e instala la dependencia automáticamente si no está presente.
+- **Aislamiento Multiempresa:** Cada inquilino opera en una red Docker privada, garantizando la separación de servicios y datos.
+- **Seguridad:** Gestión de secretos con permisos de sistema restringidos (chmod 600) para evitar accesos no autorizados.
+- **Integridad de Datos:** Mecanismo de respaldo automático (archivos .tar.gz) integrado en el ciclo de vida de destrucción de servicios.
+
+## Uso
+
+### Despliegue
 
 ```bash
-# 1. Desplegar WordPress (instala MariaDB automáticamente)
-cd scripts
-./deploy.sh miempresa wordpress
-
-# 2. Ver servicios desplegados
-./list.sh miempresa
-
-# 3. Obtener credenciales
-./get-credentials.sh miempresa wordpress
-
-# 4. Eliminar (con backup)
-./destroy.sh miempresa wordpress
+./scripts/deploy.sh <empresa> <servicio>
 ```
+*El sistema resolverá automáticamente cualquier dependencia definida en el manifiesto del servicio.*
 
----
-
-## Estructura
-
-```
-IaaS-multiempresa-ASIR/
-├── scripts/                 # Orquestación y deploy
-│   ├── deploy.sh            # Desplegar servicios
-│   ├── destroy.sh           # Eliminar servicios
-│   ├── list.sh              # Listar servicios
-│   ├── get-credentials.sh   # Ver credenciales
-│   ├── test.sh              # Suite de tests
-│   └── funciones/           # Módulos reutilizables
-│       ├── logging.sh       # Sistema de logs
-│       ├── db.sh            # Gestión de BD
-│       ├── puertos.sh       # Asignación de puertos
-│       ├── utils.sh         # Utilidades
-│       └── validaciones.sh  # Validaciones
-├── catalogo/                 # 14 servicios disponibles
-│   ├── wordpress/
-│   ├── mariadb/
-│   ├── grafana/
-│   └── ...
-└── infra/                   # Servicios globales
-    ├── docker-compose.yml
-    └── deploy-infra.sh
-```
-
----
-
-## Características principales
-
-### Despliegue automático con dependencias
-
-WordPress necesita MariaDB? El sistema lo instala automáticamente.
-
-```bash
-./deploy.sh acme wordpress
-
-# Resultado:
-# [WARN] Dependencia FALTA: acme/mariadb
-# [OK] Instalando dependencia: mariadb...
-# [OK] Desplegando wordpress...
-```
-
-### Multi-empresa con aislamiento
-
-- Servicios independientes por empresa
-- Red Docker aislada
-- Puertos sin colisiones
-- Credenciales propias
-
-### Gestión segura
-
-- Credenciales con permisos 600
-- Backups automáticos antes de eliminar
-- Base de datos de estado
-- Logs de todas las operaciones
-
----
-
-## Comandos principales
+### Gestión de Servicios
 
 | Comando | Descripción |
-|---------|-------------|
-| `./deploy.sh <empresa> <servicio>` | Desplegar un servicio |
-| `./list.sh [empresa] [formato]` | Ver servicios (tabla/json/csv) |
-| `./get-credentials.sh <empresa> <servicio>` | Mostrar credenciales |
-| `./destroy.sh <empresa> <servicio>` | Eliminar servicio (con backup) |
-| `./test.sh` | Ejecutar suite de tests |
+| :--- | :--- |
+| `./scripts/deploy.sh <empresa> <servicio>` | Despliega un servicio y sus dependencias. |
+| `./scripts/list.sh [empresa] [formato]` | Lista servicios desplegados (tabla/json/csv). |
+| `./scripts/get-credentials.sh <empresa> <servicio>` | Recupera credenciales del servicio. |
+| `./scripts/destroy.sh <empresa> <servicio>` | Elimina el servicio y genera un backup automático. |
 
----
+## Lógica de Dependencias
 
-## Servicios disponibles (14)
+La relación de dependencias se define en los archivos `config.yml` dentro de `catalogo/`. El orquestador, a través del script `scripts/catalogo-deps.sh` y la validación previa al despliegue, garantiza que los prerrequisitos existan antes de la instanciación de cualquier servicio.
 
-WordPress, MariaDB, Nginx, Grafana, Prometheus, Node-exporter, Portainer, Uptime-Kuma, Vaultwarden, Redis, PhpMyAdmin, Zabbix, Nextcloud, VPN
+## Configuración
 
----
-
-## Infraestructura global
-
-Servicios siempre activos:
-- **Portainer** - Gestor Docker (puerto 9000)
-- **Grafana** - Dashboards (puerto 3000)
-- **Prometheus** - Métricas (puerto 9090)
-- **Nginx Proxy Manager** - Proxy inverso (puerto 81)
-
-```bash
-cd infra
-./deploy-infra.sh start
-```
-
----
-
-## Testing
-
-```bash
-cd scripts
-./test.sh
-
-# Resultado esperado: 8 PASS, 0 FAIL
-```
-
----
+- **Directorio de Datos:** Definido por la variable `DATA_DIR` en `scripts/config.env` (por defecto: `/srv`).
+- **Gestión de Puertos:** Rango configurable mediante `PUERTO_MIN` y `PUERTO_MAX` en `scripts/config.env`.
 
 ## Requisitos
 
 - Docker (versión 20+)
 - Docker Compose (versión 2+)
-- Bash 4.0+
-- Linux (Ubuntu 20+, Debian 11+)
-
----
-
-## Status
-
-**LISTO PARA DEFENSA ASIR** ✓
-
-- Fase P0 (base): 100%
-- Fase P1 (herramientas): 100%
-- Tests: 8/8 PASS
+- Bash (4.0+)
+- Linux (Ubuntu/Debian recomendado)

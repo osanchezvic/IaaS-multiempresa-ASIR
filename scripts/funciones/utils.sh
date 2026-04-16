@@ -121,4 +121,23 @@ leer_credenciales() {
     grep "^${clave}=" "$cred_file" | cut -d'=' -f2
 }
 
-export -f validar_nombre confirmar generar_password guardar_credenciales leer_credenciales leer_credenciales_json leer_credenciales_json
+# Backup de servicio
+backup_servicio() {
+    local empresa="$1"
+    local servicio="$2"
+    local servicio_dir="$DATA_DIR/$empresa/$servicio"
+    local backup_dir="/var/backups/iaas/$empresa/$servicio"
+    local timestamp=$(date +%Y%m%d%H%M%S)
+    
+    if [ ! -d "$servicio_dir" ]; then
+        return 0
+    fi
+
+    mkdir -p "$backup_dir"
+    tar -czf "$backup_dir/${servicio}_${timestamp}.tar.gz" -C "$servicio_dir" .
+    echo "$backup_dir/${servicio}_${timestamp}.tar.gz"
+}
+
+# Exportar funciones
+export -f validar_nombre confirmar generar_password guardar_credenciales leer_credenciales leer_credenciales_json backup_servicio
+

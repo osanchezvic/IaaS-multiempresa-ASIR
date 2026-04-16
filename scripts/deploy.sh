@@ -14,6 +14,12 @@ source "$SCRIPT_PATH/funciones/puertos.sh"
 source "$SCRIPT_PATH/funciones/utils.sh"
 source "$SCRIPT_PATH/funciones/validaciones.sh"
 
+# =====================================================
+# INICIO Y BLOQUEO
+# =====================================================
+exec 200>/tmp/iaas_deploy.lock
+flock -n 200 || { echo "Otro proceso de deploy está en ejecución"; exit 1; }
+
 # Parámetros
 EMPRESA="${1:-}"
 SERVICIO="${2:-}"
@@ -31,7 +37,7 @@ procesar_template() {
     sed -e "s|{{EMPRESA}}|$EMPRESA|g" \
         -e "s|{{SERVICIO}}|$SERVICIO|g" \
         -e "s|{{PUERTO}}|$PUERTO|g" \
-        -e "s|{{RUTA_DATOS}}|/srv/$EMPRESA|g" \
+        -e "s|{{RUTA_DATOS}}|$DATA_DIR/$EMPRESA|g" \
         -e "s|{{DB_NAME}}|$DB_NAME|g" \
         -e "s|{{DB_USER}}|$DB_USER|g" \
         -e "s|{{DB_PASSWORD}}|$DB_PASSWORD|g" \
@@ -61,7 +67,7 @@ fi
 # COMPROBACIÓN DE EXISTENCIA
 # =====================================================
 
-SERVICIO_DIR="/srv/$EMPRESA/$SERVICIO"
+SERVICIO_DIR="$DATA_DIR/$EMPRESA/$SERVICIO"
 COMPOSE_FILE="$SERVICIO_DIR/docker-compose.yml"
 
 if [ -f "$COMPOSE_FILE" ]; then
@@ -80,6 +86,9 @@ fi
 # =====================================================
 # PREPARAR DIRECTORIO
 # =====================================================
+
+log_info "Realizando backup de seguridad..."
+backup_servicio "$EMPRESA" "$SERVICIO"
 
 rm -rf "$SERVICIO_DIR"
 mkdir -p "$SERVICIO_DIR"
