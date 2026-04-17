@@ -5,7 +5,7 @@
 # =========================================
 
 # Registrar empresa (si no existe)
-registro_empresa() {
+db_register_empresa() {
     local empresa="$1"
     
     mkdir -p "$DB_DIR"
@@ -19,7 +19,7 @@ registro_empresa() {
 
 # Registrar servicio
 # Formato: empresa:servicio:puerto:status
-registro_servicio() {
+db_register_servicio() {
     local empresa="$1"
     local servicio="$2"
     local puerto="$3"
@@ -83,4 +83,6 @@ crear_usuario_admin() {
     " 2>/dev/null || log_warn "No se pudo insertar usuario admin en BD infra (BD no disponible?)"
 }
 
-export -f registro_empresa registro_servicio obtener_puerto servicio_existe listar_servicios crear_usuario_admin
+# Exportar funciones
+export -f db_register_empresa db_register_servicio obtener_puerto servicio_existe listar_servicios crear_usuario_admin
+
