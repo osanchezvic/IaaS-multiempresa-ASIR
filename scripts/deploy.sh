@@ -41,6 +41,7 @@ procesar_template() {
         -e "s|{{DB_NAME}}|$DB_NAME|g" \
         -e "s|{{DB_USER}}|$DB_USER|g" \
         -e "s|{{DB_PASSWORD}}|$DB_PASSWORD|g" \
+        -e "s|{{DB_ROOT_PASSWORD}}|$DB_ROOT_PASSWORD|g" \
         -e "s|{{ADMIN_USER}}|$ADMIN_USER|g" \
         -e "s|{{ADMIN_PASSWORD}}|$ADMIN_PASSWORD|g" \
         -e "s|{{JWT_SECRET}}|$JWT_SECRET|g" \
@@ -109,6 +110,7 @@ fi
 DB_NAME="${EMPRESA}_db"
 DB_USER="${EMPRESA}_user"
 DB_PASSWORD=$(generar_password 16)
+DB_ROOT_PASSWORD=$(generar_password 16)
 ADMIN_USER="admin"
 ADMIN_PASSWORD=$(generar_password 16)
 JWT_SECRET=$(generar_token 32)
@@ -121,6 +123,7 @@ CREDENCIALES_JSON=$(jq -n \
     --arg db_name     "$DB_NAME" \
     --arg db_user     "$DB_USER" \
     --arg db_pass     "$DB_PASSWORD" \
+    --arg db_root_pass "$DB_ROOT_PASSWORD" \
     --arg admin_user  "$ADMIN_USER" \
     --arg admin_pass  "$ADMIN_PASSWORD" \
     --arg jwt_secret  "$JWT_SECRET" \
@@ -130,6 +133,7 @@ CREDENCIALES_JSON=$(jq -n \
         db_name:        $db_name,
         db_user:        $db_user,
         db_password:    $db_pass,
+        db_root_password: $db_root_pass,
         admin_user:     $admin_user,
         admin_password: $admin_pass,
         jwt_secret:     $jwt_secret,
