@@ -17,8 +17,10 @@ source "$SCRIPT_PATH/funciones/validaciones.sh"
 # =====================================================
 # INICIO Y BLOQUEO
 # =====================================================
-exec 200>/tmp/iaas_deploy.lock
-flock -n 200 || { echo "Otro proceso de deploy está en ejecución"; exit 1; }
+if [ "${SKIP_LOCK:-false}" != "true" ]; then
+    exec 200>/tmp/iaas_deploy.lock
+    flock -n 200 || { echo "Otro proceso de deploy está en ejecución"; exit 1; }
+fi
 
 # Parámetros
 EMPRESA="${1:-}"

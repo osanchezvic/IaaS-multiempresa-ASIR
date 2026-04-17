@@ -69,7 +69,7 @@ validar_dependencias_auto() {
                 # Desplegar dependencia automáticamente
                 cd "$SCRIPT_PATH" || return 1
                 
-                if ./deploy.sh "$empresa" "$dep" >/dev/null 2>&1; then
+                if SKIP_LOCK=true ./deploy.sh "$empresa" "$dep"; then
                     echo_info "Dependencia instalada: $empresa/$dep"
                 else
                     echo_error "Error instalando dependencia: $empresa/$dep"
