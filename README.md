@@ -1,74 +1,63 @@
-# Plataforma SaaS Multiempresa
- 
-Plataforma de gestión SaaS automatizada diseñada para orquestar servicios basados en Docker en entornos multiempresa. El sistema centraliza el despliegue, la configuración y el mantenimiento de servicios aislados para múltiples inquilinos (tenants).
+# Plataforma SaaS Multiempresa (ASIR)
 
-## Arquitectura
+Plataforma de gestión SaaS automatizada y segura diseñada para orquestar servicios basados en Docker en entornos multiempresa. El sistema permite el despliegue centralizado, la configuración, y la gestión de acceso basada en roles (RBAC) para múltiples inquilinos.
 
-El sistema emplea un enfoque basado en catálogo para desplegar servicios aislados. Automatiza los siguientes procesos críticos:
-- Resolución de dependencias entre servicios.
-- Asignación dinámica de puertos y prevención de colisiones.
-- Gestión de secretos y credenciales.
-- Copias de seguridad automáticas antes de operaciones destructivas.
-- Aislamiento de red (redes Docker dedicadas por empresa).
+## Arquitectura y Seguridad
+El sistema se ha reforzado para cumplir con estándares profesionales de seguridad y gestión de infraestructuras:
+
+- **RBAC (Control de Acceso basado en Roles):** Integración de base de datos MariaDB para gestionar usuarios, empresas (tenants) y permisos de administrador.
+- **Seguridad en Capas:**
+  - **Authelia:** Implementación de autenticación de dos factores (2FA) y control de acceso.
+  - **Hardening:** Uso de archivos `.env` para secretos, CSRF tokens en el dashboard, y escaneo de vulnerabilidades mediante **Trivy**.
+  - **Proxy Inverso:** Nginx Proxy Manager gestionando el tráfico y certificados SSL.
+- **API-driven Infrastructure:** Servicio de API (FastAPI) para automatizar el ciclo de vida de despliegue mediante peticiones seguras.
+- **Monitorización:** Stack completo con Prometheus, Grafana y Loki.
 
 ## Estructura del Proyecto
 
 ```text
 /
 ├── catalogo/        # Definiciones de servicios (templates docker-compose)
-├── infra/           # Infraestructura global (proxy, monitorización, gestión)
+├── infra/           # Infraestructura global (proxy, api, authelia, monitorización)
 ├── scripts/         # Lógica central de orquestación
 │   ├── funciones/   # Módulos bash reutilizables
-│   └── databases/   # Gestión de estado (JSON/Texto plano)
-└── docs/            # Documentación técnica
+│   └── deploy.sh    # Script principal con pre-flight security scan
+├── docs/            # Documentación técnica y guía de defensa
+└── README.md        # Este archivo
 ```
 
 ## Características Principales
 
-- **Resolución Automática de Dependencias:** Gestión de despliegue en cascada. Si un servicio (ej. `wordpress`) requiere otro (ej. `mariadb`), el orquestador valida e instala la dependencia automáticamente si no está presente.
-- **Aislamiento Multiempresa:** Cada inquilino opera en una red Docker privada, garantizando la separación de servicios y datos.
-- **Seguridad:** Gestión de secretos con permisos de sistema restringidos (chmod 600) para evitar accesos no autorizados.
-- **Integridad de Datos:** Mecanismo de respaldo automático (archivos .tar.gz) integrado en el ciclo de vida de destrucción de servicios.
+1. **RBAC y Gestión Multiempresa:** Diferenciación entre administradores globales y administradores de empresa (tenants) mediante base de datos relacional.
+2. **API de Despliegue:** API segura para disparar el despliegue (`POST /deploy/<company>/<service>`) reemplazando ejecuciones manuales.
+3. **Escaneo de Vulnerabilidades (Trivy):** Paso de seguridad obligatorio integrado en `deploy.sh` que aborta despliegues con vulnerabilidades críticas.
+4. **Despliegue Automatizado:** Resolución de dependencias entre contenedores, aislamiento de redes y gestión dinámica de puertos.
+5. **Backups Automáticos:** Protección de datos integrada antes de operaciones destructivas.
 
 ## Uso
 
-### Despliegue
+### Despliegue de Servicios
+El despliegue se puede realizar mediante CLI o a través del nuevo Panel de Administración que interactúa con la API interna.
 
 ```bash
 ./scripts/deploy.sh <empresa> <servicio>
 ```
-*El sistema resolverá automáticamente cualquier dependencia definida en el manifiesto del servicio.*
 
 ### Gestión de Servicios
-
 | Comando | Descripción |
 | :--- | :--- |
-| `./scripts/deploy.sh <empresa> <servicio>` | Despliega un servicio y sus dependencias. |
-| `./scripts/list.sh [empresa] [formato]` | Lista servicios desplegados (tabla/json/csv). |
-| `./scripts/get-credentials.sh <empresa> <servicio>` | Recupera credenciales del servicio. |
-| `./scripts/destroy.sh <empresa> <servicio>` | Elimina el servicio y genera un backup automático. |
-
-## Lógica de Dependencias
-
-La relación de dependencias se define en los archivos `config.yml` dentro de `catalogo/`. El orquestador, a través del script `scripts/catalogo-deps.sh` y la validación previa al despliegue, garantiza que los prerrequisitos existan antes de la instanciación de cualquier servicio.
-
-## Configuración
-
-- **Directorio de Datos:** Definido por la variable `DATA_DIR` en `scripts/config.env` (por defecto: `/srv`).
-- **Gestión de Puertos:** Rango configurable mediante `PUERTO_MIN` y `PUERTO_MAX` en `scripts/config.env`.
+| `./scripts/deploy.sh` | Despliega servicio (con pre-flight scan de Trivy). |
+| `./scripts/list.sh` | Lista servicios desplegados por empresa. |
+| `./scripts/get-credentials.sh` | Recupera credenciales seguras (formato JSON). |
+| `./scripts/destroy.sh` | Elimina servicios con backup previo. |
 
 ## Seguridad
-
-- **Gestión de Secretos:** El sistema utiliza variables de entorno para la configuración sensible. Asegúrese de configurar las siguientes variables antes de desplegar:
-  - `GRAFANA_ADMIN_PASSWORD`
-  - `NPM_DB_PASSWORD`
-  - `NPM_DB_ROOT_PASSWORD`
-  
-  Consulte `scripts/config.env` para más detalles sobre las configuraciones disponibles.
+- **Secretos:** Nunca almacenar contraseñas en el código fuente. Utilizar variables de entorno en el archivo `.env`.
+- **RBAC:** La base de datos `users_db` controla el acceso. Asegurar que las contraseñas están correctamente hasheadas (bcrypt).
+- **API:** El token de la API (`API_TOKEN`) debe mantenerse privado y rotado periódicamente.
 
 ## Requisitos
-
-- Docker (versión 20+)
-- Docker Compose (versión 2+)
-- Bash (4.0+)
-- Linux (Ubuntu/Debian recomendado)
+- Docker Engine 20+
+- Docker Compose v2
+- Trivy (para escaneo de imágenes)
+- MariaDB
